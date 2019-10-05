@@ -364,16 +364,44 @@ def to_cartesian(ur, ut, uz, l, theta=0):
 def resample(u, t, dt, tmin=0, tmax=None):
     if tmax is None:
         tmax = np.max(t)
+
+
+
     ti = np.arange(tmin, tmax+dt, dt)
-    return np.interp(ti, t, u), ti
+    ui = np.interp(ti, t, u)
+#    plt.plot(t,u)
+#    plt.plot(ti,ui)
+#    plt.show()
+    return ui, ti
 
 def get_source_response(u, s, dt):
+    
+    
 
+#    nt = u.shape[0]
+#    u = u-np.mean(u)
+#    upad = np.concatenate([np.zeros(3*nt)+ u[0], u, np.zeros(3*nt)+u[-1]])
+#    upad *= np.kaiser(upad.shape[0], 20)
+#    spad = np.concatenate([s, np.zeros(6*nt)])
+#    U = np.fft.fft(upad)
+#    S = np.fft.fft(spad)
+#    w = 2 * np.pi * np.fft.fftfreq(upad.shape[0], d=dt)
+#    v = np.real(np.fft.ifft(- w**2 * U * S))
+#    v = v[3*nt:4*nt]
+#    plt.plot(v)
+#    plt.show()
+#
+
+    u[1:-1] = u[2:]-2*u[1:-1]+u[:-2]
+    u[0] = u[-1] = 0
     U = np.fft.fft(u)
     S = np.fft.fft(s)
     w = 2 * np.pi * np.fft.fftfreq(u.shape[0], d=dt)
-    #return np.fft.ifft(-w**2 * U * S)
-    return np.real(np.fft.ifft(1j * w * U * S))
+    v = np.real(np.fft.ifft(U * S))
+#    plt.plot(v)
+#    plt.show()
+
+    return v
 
 def ricker_wavelet(f0, Nt, dt ):
     tmin = -1.5 / f0
@@ -397,16 +425,16 @@ def compute_shot(offsets, vp, vs, rho, dt, src,
         theta = np.pi/2
     else:
         raise ValueError("linedir must be either \"x\" or \"y\"")
-
+    
     traces = []
     for r in offsets:
         T, Urx, Utx, Uzz, Urz = Lamb_3D(pois=pois, NoPlot=1, r=r, mu=mu,
                                         rho=rho)
         t = T
-        # Urx = Urx / r / mu
-        # Utx = Utx / r / mu
-        # Uzz = Uzz / r / mu
-        # Urz = Urz / r / mu
+#        Urx = Urx / r / mu
+#        Utx = Utx / r / mu
+#        Uzz = Uzz / r / mu
+#        Urz = Urz / r / mu
 
         if srctype == "x":
             uxx, uyx, uzx = to_cartesian(Urx, Utx, -Urz * np.cos(theta), l=1,
@@ -436,7 +464,7 @@ def compute_shot(offsets, vp, vs, rho, dt, src,
         v = get_source_response(u, src, dt)
         traces.append(np.real(v))
 
-    return np.array(traces)
+    return np.transpose(np.array(traces))
 
 
 if __name__ == "__main__":
@@ -455,5 +483,5 @@ if __name__ == "__main__":
     clip = 0.1
     vmax = np.max(shot) * clip
     vmin = -vmax
-    plt.imshow(np.array(shot), aspect='auto', vmax=vmax, vmin=vmin)
+    plt.imshow(shot, aspect='auto', vmax=vmax, vmin=vmin)
     plt.show()
