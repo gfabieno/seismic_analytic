@@ -1,2 +1,5 @@
 *.ezp
 .idea
+*.mat
+seiscl
+__pycache__/
