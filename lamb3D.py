@@ -364,54 +364,18 @@ def to_cartesian(ur, ut, uz, l, theta=0):
 def resample(u, t, dt, tmin=0, tmax=None):
     if tmax is None:
         tmax = np.max(t)
-
-
-
     ti = np.arange(tmin, tmax+dt, dt)
-    ui = np.interp(ti, t, u)
-#    plt.plot(t,u)
-#    plt.plot(ti,ui)
-#    plt.show()
-    return ui, ti
+    return np.interp(ti, t, u), ti
 
 def get_source_response(u, s, dt):
-    
-    
-
-#    nt = u.shape[0]
-#    u = u-np.mean(u)
-#    upad = np.concatenate([np.zeros(3*nt)+ u[0], u, np.zeros(3*nt)+u[-1]])
-#    upad *= np.kaiser(upad.shape[0], 20)
-#    spad = np.concatenate([s, np.zeros(6*nt)])
-#    U = np.fft.fft(upad)
-#    S = np.fft.fft(spad)
-#    w = 2 * np.pi * np.fft.fftfreq(upad.shape[0], d=dt)
-#    v = np.real(np.fft.ifft(- w**2 * U * S))
-#    v = v[3*nt:4*nt]
-#    plt.plot(v)
-#    plt.show()
-#
 
     u[1:-1] = u[2:]-2*u[1:-1]+u[:-2]
     u[0] = u[-1] = 0
     U = np.fft.fft(u)
     S = np.fft.fft(s)
-    w = 2 * np.pi * np.fft.fftfreq(u.shape[0], d=dt)
     v = np.real(np.fft.ifft(U * S))
-#    plt.plot(v)
-#    plt.show()
 
     return v
-
-def ricker_wavelet(f0, Nt, dt ):
-    tmin = -1.5 / f0
-    #tmin = -Nt * dt / 2
-    t = np.arange(tmin, Nt * dt + dt + tmin, dt)
-    #t = np.linspace(tmin, Nt * dt + tmin, num=Nt)
-
-    ricker = ((1.0 - 2.0 * (np.pi ** 2) * (f0 ** 2) * (t ** 2))
-              * np.exp(-(np.pi ** 2) * (f0 ** 2) * (t ** 2)))
-    return ricker
 
 def compute_shot(offsets, vp, vs, rho, dt, src,
                  srctype = "x", rectype = "x", linedir = "x"):

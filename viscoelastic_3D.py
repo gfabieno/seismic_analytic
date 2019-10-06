@@ -1,8 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
-def analytic_visco_pointz(vp, vs, rho, taup, taus,
-                          omega0, dt, rec_pos, src):
+def viscoelastic_3D(vp, vs, rho, taup, taus, omega0, dt, rec_pos, src):
     """
     Analytic solution for a point force in the z direction in an infinite
     homogeneous space
@@ -12,7 +10,7 @@ def analytic_visco_pointz(vp, vs, rho, taup, taus,
      rho: density
      taup: relaxation time for P-waves
      taus: relaxation time for S-waves
-     omega0: Relaxation frequency
+     omega0: List of relaxation frequencies
      dt: time step size
      rec_pos: a list of [ [x,y,z] ] for each receiver position
      src: the src signal
@@ -72,7 +70,7 @@ def analytic_visco_pointz(vp, vs, rho, taup, taus,
                                         + (3.0 + 3.0 * 1j * R * ks
                                            - R ** 2 * ks ** 2)
                                         * np.exp(-1j * ks * R)
-                                        )
+                                        ) * 1j * omega[ii]
 
 
             Vy[ii, jj] = amp * y * z * (
@@ -83,7 +81,7 @@ def analytic_visco_pointz(vp, vs, rho, taup, taus,
                                         (3 + 3 * 1j * R * ks
                                          - R ** 2 * ks ** 2)
                                         * np.exp(-1j * ks * R)
-                                        )
+                                        ) * 1j * omega[ii]
 
             Vz[ii, jj] = amp * (
                                 (x ** 2 + y ** 2 - 2.0 * z ** 2)
@@ -96,10 +94,9 @@ def analytic_visco_pointz(vp, vs, rho, taup, taus,
                                 + ((x ** 2 + y ** 2) * R ** 2 * ks ** 2
                                     - 1j * (x ** 2 + y ** 2 - 2.0 * z ** 2)
                                     * R * ks) * np.exp(-1j * ks * R)
-                                )
+                                ) * 1j * omega[ii]
 
     vx = np.real(nt * np.fft.ifft(Vx, axis=0))
     vy = np.real(nt * np.fft.ifft(Vy, axis=0))
     vz = np.real(nt * np.fft.ifft(Vz, axis=0))
-
     return vx, vy, vz

@@ -68,22 +68,23 @@ def Garvin2(x,z,pois=0.25,h=1,Cs=1,rho=1, plot=1):
         C = tau2*C2-C1
         D = tau[j]*(tau2*X-D1)
         E = (tau2-E1)*(tau2-E2)
+        #q = Ferrari(A,B,C,D,E)
         q = np.roots([A,-4*1j*B,-2*C,4*1j*D,E]) # in lieu of Ferrari
         q = q[(np.real(q)>=0) & (np.imag(q)>=0)] # discard negative roots
         q1 = np.min(np.imag(q)) # find position of true root
         I = np.where(np.imag(q)==q1)
         q3.append(q[I]) # choose that root
     q3 = np.array(q3)[:,0]
-    # Sánchez-Sesma approximation:
-    #*****************************
-    R = (h+z/a)/(h+z) # r_eq/r2
-    r3 = R*r2 # equivalent radius
-    tapp = tau/R
-    T = np.conj(np.sqrt(tapp**2-a2)) # conj --> T must have neg. imag part
-    q3app = R*(c2*T+1j*tapp*s2)
 
     # Compare exact vs. approximate
     if plot:
+        # Sánchez-Sesma approximation:
+        # *****************************
+        R = (h + z / a) / (h + z)  # r_eq/r2
+        r3 = R * r2  # equivalent radius
+        tapp = tau / R
+        T = np.conj(np.sqrt(tapp ** 2 - a2))  # conj --> T must have neg. imag part
+        q3app = R * (c2 * T + 1j * tapp * s2)
         plt.plot(t3,np.real(q3))
         plt.plot(t3,np.imag(q3),'r')
         plt.plot(t3,np.real(q3app),'--')
@@ -163,7 +164,6 @@ def Garvin2(x,z,pois=0.25,h=1,Cs=1,rho=1, plot=1):
         plt.ylabel('Uz*r1*\mu')
         plt.grid()
         plt.show()
-
     return u, w, time
 
 #--------------------------------------------------------------
@@ -249,21 +249,13 @@ def resample(u, t, dt, tmin=0, tmax=None):
 
 def get_source_response(u, s, dt):
 
+    u[1:-1] = 0.5 * u[2:] - 0.5 * u[:-2]
+    u[0] = u[-1] = 0
     U = np.fft.fft(u)
     S = np.fft.fft(s)
-    w = 2 * np.pi * np.fft.fftfreq(u.shape[0], d=dt)
-    #return np.fft.ifft(-w**2 * U * S)
-    return np.real(np.fft.ifft(1j * w * U * S))
+    v = -np.real(np.fft.ifft(U * S))
 
-def ricker_wavelet(f0, Nt, dt ):
-    tmin = -1.5 / f0
-    #tmin = -Nt * dt / 2
-    t = np.arange(tmin, Nt * dt + dt + tmin, dt)
-    #t = np.linspace(tmin, Nt * dt + tmin, num=Nt)
-
-    ricker = ((1.0 - 2.0 * (np.pi ** 2) * (f0 ** 2) * (t ** 2))
-              * np.exp(-(np.pi ** 2) * (f0 ** 2) * (t ** 2)))
-    return ricker
+    return v
 
 def compute_shot(offsets, vp, vs, rho, dt, src, rectype="x", zsrc=1, zrec=1):
 
@@ -271,8 +263,8 @@ def compute_shot(offsets, vp, vs, rho, dt, src, rectype="x", zsrc=1, zrec=1):
     mu = vs ** 2 * rho
     tmax = (src.shape[0]-1) * dt
 
-    traces = []
-    for r in offsets:
+    traces = [[] for _ in offsets]
+    for ii, r in enumerate(offsets):
         ux, uz, t = Garvin2(r, zrec, pois=pois, h=zsrc, Cs=vs, rho=rho, plot=0)
         t = t * r / vs
         ux = ux / r / mu
@@ -286,9 +278,9 @@ def compute_shot(offsets, vp, vs, rho, dt, src, rectype="x", zsrc=1, zrec=1):
             raise ValueError("rectype must be either \"x\" or \"z\"")
 
         v = get_source_response(u, src, dt)
-        traces.append(np.real(v))
+        traces[ii] = np.real(v)
 
-    return np.array(traces)
+    return np.transpose(np.array(traces))
 
 if __name__ == "__main__":
     #Garvin2(10, 1, pois=0.2, h=0.1, Cs=1, rho=1)
